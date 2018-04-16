@@ -1,0 +1,10 @@
+{
+  "batch_size" : 100,
+  "train_steps" : 1000,
+  "learning_rate" : 0.1,
+  "TRAIN_DATA_URL" : "http://download.tensorflow.org/data/iris_training.csv",
+  "TEST_DATA_URL" : "http://download.tensorflow.org/data/iris_test.csv",
+  "exp_name": "tensorFlowDNN",
+  "CSV_COLUMN_NAMES" : ["SepalLength", "SepalWidth", "PetalLength", "PetalWidth", "Species"],
+  "SPECIES" : ["Setosa", "Versicolor", "Virginica"]
+}
