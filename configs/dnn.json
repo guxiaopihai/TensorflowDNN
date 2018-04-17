@@ -6,5 +6,13 @@
   "TEST_DATA_URL" : "http://download.tensorflow.org/data/iris_test.csv",
   "exp_name": "tensorFlowDNN",
   "CSV_COLUMN_NAMES" : ["SepalLength", "SepalWidth", "PetalLength", "PetalWidth", "Species"],
-  "SPECIES" : ["Setosa", "Versicolor", "Virginica"]
+  "SPECIES" : ["Setosa", "Versicolor", "Virginica"],
+  "hidden_units" : [10,10],
+  "n_classes" : 3,
+  "predict_x" : {
+        "SepalLength": [5.1, 5.9, 6.9],
+        "SepalWidth": [3.3, 3.0, 3.1],
+        "PetalLength": [1.7, 4.2, 5.4],
+        "PetalWidth": [0.5, 1.5, 2.1]
+    }
 }
