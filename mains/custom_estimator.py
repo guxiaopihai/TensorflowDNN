@@ -1,7 +1,8 @@
 from utils.utils import get_args, conver_numeric_column
 from utils.config import process_config
 from datas.iris_data import DataLoad
-from models.dnn_class_model_premade import DnnClassModel
+from models.dnn_class_model_custom import DnnModelCustom
+from models.my_dnn_class_model import my_model
 from trains.train import DnnTrains
 
 def main():
@@ -11,17 +12,15 @@ def main():
     except:
         print("missing or invalid arguments")
         exit(0)
-
     data = DataLoad(config).load_data()
     my_feature_columns = conver_numeric_column(data.train_x)
 
-    classifier = DnnClassModel(my_feature_columns, config).getModel()
+    classifier = DnnModelCustom(my_feature_columns, config, my_model).getModel()
 
     trainer = DnnTrains(classifier, config, data)
     trainer.train()
     eval_result = trainer.eval()
     print('\nTest set accuracy: {accuracy:0.3f}\n'.format(**eval_result))
-
 
 
     predictions = trainer.predict(config.predict_x)
@@ -32,6 +31,8 @@ def main():
 
         print(template.format(config.SPECIES[class_id],
                               100 * probability, expec))
+
+
 
 
 if __name__ == '__main__':

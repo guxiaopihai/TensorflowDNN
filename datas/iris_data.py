@@ -29,7 +29,7 @@ class DataLoad:
             features = dict(self.test_x)
             inputs = (features, self.test_y)
         else:
-            inputs = predict_x
+            inputs = dict(predict_x)
         dataset = tf.data.Dataset.from_tensor_slices(inputs)
         assert self.config.batch_size is not None, "batch_size must not be None"
         dataset = dataset.batch(self.config.batch_size)
