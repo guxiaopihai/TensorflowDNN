@@ -1,6 +1,6 @@
 import tensorflow as tf
 
-class MyModel:
+class MyDnnModel:
     def __init__(self, features, labels, mode, param):
         self.features = features
         self.labels = labels
@@ -48,7 +48,7 @@ class MyModel:
 
 
 def my_model(features, labels, mode, params):
-    model = MyModel(features, labels, mode, params)
+    model = MyDnnModel(features, labels, mode, params)
     model.build_model()
     if mode == tf.estimator.ModeKeys.TRAIN:
         estimatorspec = model.train_mode()
