@@ -25,69 +25,72 @@ import tensorflow as tf  # pylint: disable=g-bad-import-order
 from mnist import dataset
 from utils import parsers
 from utils import hooks_helper
-from utils import model_helpers
 from models.my_cnn_class_model import my_model
 
 LEARNING_RATE = 1e-4
 
 
-def create_model(data_format,image):
+class Model(tf.keras.Model):
   """Model to recognize digits in the MNIST dataset.
   Network structure is equivalent to:
   https://github.com/tensorflow/tensorflow/blob/r1.5/tensorflow/examples/tutorials/mnist/mnist_deep.py
   and
   https://github.com/tensorflow/models/blob/master/tutorials/image/mnist/convolutional.py
-  But uses the tf.keras API.
-  Args:
-    data_format: Either 'channels_first' or 'channels_last'. 'channels_first' is
-      typically faster on GPUs while 'channels_last' is typically faster on
-      CPUs. See
-      https://www.tensorflow.org/performance/performance_guide#data_formats
-  Returns:
-    A tf.keras.Model.
+  But written as a tf.keras.Model using the tf.layers API.
   """
-  if data_format == 'channels_first':
-    input_shape = [1, 28, 28]
-  else:
-    assert data_format == 'channels_last'
-    input_shape = [28, 28, 1]
 
-  l = tf.keras.layers
-  max_pool = l.MaxPooling2D(
-      (2, 2), (2, 2), padding='same', data_format=data_format)
-  # The model consists of a sequential chain of layers, so tf.keras.Sequential
-  # (a subclass of tf.keras.Model) makes for a compact description.
-  return tf.keras.Sequential(
-      [
-          l.Reshape(input_shape=input_shape,target_shape=input_shape),
-          l.Conv2D(
-              32,
-              5,
-              padding='same',
-              data_format=data_format,
-              activation=tf.nn.relu),
-          max_pool,
-          l.Conv2D(
-              64,
-              5,
-              padding='same',
-              data_format=data_format,
-              activation=tf.nn.relu),
-          max_pool,
-          l.Flatten(),
-          l.Dense(1024, activation=tf.nn.relu),
-          l.Dropout(0.4),
-          l.Dense(10)
-      ])
+  def __init__(self, data_format):
+    """Creates a model for classifying a hand-written digit.
+    Args:
+      data_format: Either 'channels_first' or 'channels_last'.
+        'channels_first' is typically faster on GPUs while 'channels_last' is
+        typically faster on CPUs. See
+        https://www.tensorflow.org/performance/performance_guide#data_formats
+    """
+    super(Model, self).__init__()
+    if data_format == 'channels_first':
+      self._input_shape = [-1, 1, 28, 28]
+    else:
+      assert data_format == 'channels_last'
+      self._input_shape = [-1, 28, 28, 1]
+
+    self.conv1 = tf.layers.Conv2D(
+        32, 5, padding='same', data_format=data_format, activation=tf.nn.relu)
+    self.conv2 = tf.layers.Conv2D(
+        64, 5, padding='same', data_format=data_format, activation=tf.nn.relu)
+    self.fc1 = tf.layers.Dense(1024, activation=tf.nn.relu)
+    self.fc2 = tf.layers.Dense(10)
+    self.dropout = tf.layers.Dropout(0.4)
+    self.max_pool2d = tf.layers.MaxPooling2D(
+        (2, 2), (2, 2), padding='same', data_format=data_format)
+
+  def __call__(self, inputs, training):
+    """Add operations to classify a batch of input images.
+    Args:
+      inputs: A Tensor representing a batch of input images.
+      training: A boolean. Set to True to add operations required only when
+        training the classifier.
+    Returns:
+      A logits Tensor with shape [<batch_size>, 10].
+    """
+    y = tf.reshape(inputs, self._input_shape)
+    y = self.conv1(y)
+    y = self.max_pool2d(y)
+    y = self.conv2(y)
+    y = self.max_pool2d(y)
+    y = tf.layers.flatten(y)
+    y = self.fc1(y)
+    y = self.dropout(y, training=training)
+    return self.fc2(y)
 
 
 def model_fn(features, labels, mode, params):
   """The model_fn argument for creating an Estimator."""
-
+  model = Model(params['data_format'])
   image = features
   if isinstance(image, dict):
     image = features['image']
-  model = create_model(params['data_format'],image)
+
   if mode == tf.estimator.ModeKeys.PREDICT:
     logits = model(image, training=False)
     predictions = {
@@ -133,7 +136,8 @@ def model_fn(features, labels, mode, params):
         eval_metric_ops={
             'accuracy':
                 tf.metrics.accuracy(
-                    labels=labels, predictions=tf.argmax(logits, axis=1)),
+                    labels=labels,
+                    predictions=tf.argmax(logits, axis=1)),
         })
 
 
@@ -168,7 +172,7 @@ def main(argv):
   parser = MNISTArgParser()
   flags = parser.parse_args(args=argv[1:])
 
-  model_function = model_fn
+  model_function = my_model
 
   if flags.multi_gpu:
     validate_batch_size_for_multi_gpu(flags.batch_size)
@@ -219,10 +223,6 @@ def main(argv):
     mnist_classifier.train(input_fn=train_input_fn, hooks=train_hooks)
     eval_results = mnist_classifier.evaluate(input_fn=eval_input_fn)
     print('\nEvaluation results:\n\t%s\n' % eval_results)
-
-    if model_helpers.past_stop_threshold(flags.stop_threshold,
-                                         eval_results['accuracy']):
-      break
 
   # Export the model
   if flags.export_dir is not None:

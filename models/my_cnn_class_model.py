@@ -6,9 +6,9 @@ class MyCnnModel:
         self.mode = mode
         self.data_format = params['data_format']
         if self.data_format == 'channels_first':
-            input_shape = [1, 28, 28]
+            self.input_shape = [1, 28, 28]
         else:
-            input_shape = [28, 28, 1]
+            self.input_shape = [28, 28, 1]
         self.image = features
         if isinstance(self.image, dict):
             self.image = features['image']
