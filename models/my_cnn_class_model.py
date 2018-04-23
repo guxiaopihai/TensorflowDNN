@@ -15,19 +15,19 @@ class MyCnnModel:
 
     def build_model(self):
         self.create_graph()
-        if self.mode != tf.estimator.ModeKeys.PREDICT:
-            self.defined_loss_accuracy()
         if self.mode == tf.estimator.ModeKeys.TRAIN:
             self.logits = self.model(self.image, training=True)
         else:
             self.logits = self.model(self.image, training=False)
+        if self.mode != tf.estimator.ModeKeys.PREDICT:
+            self.defined_loss_accuracy()
 
     def create_graph(self):
         layer = tf.keras.layers
         max_pool = layer.MaxPooling2D((2, 2), (2, 2), padding='same', data_format=self.data_format)
         self.model = tf.keras.Sequential(
             [
-                layer.Reshape(self.input_shape),
+                layer.Reshape(input_shape=self.input_shape, target_shape=self.input_shape),
                 layer.Conv2D(32, 5, padding='same', data_format=self.data_format, activation=tf.nn.relu),
                 max_pool,
                 layer.Conv2D(64, 5, padding='same', data_format=self.data_format, activation=tf.nn.relu),
@@ -40,7 +40,7 @@ class MyCnnModel:
 
 
     def train_mode(self):
-        optimizer = tf.train.AdamOptimizer(learning_rate=1e-4)
+        optimizer = tf.train.AdamOptimizer(self.LEARNING_RATE )
         train_op = optimizer.minimize(self.loss, global_step=tf.train.get_global_step())
         return tf.estimator.EstimatorSpec(
             self.mode, loss=self.loss, train_op=train_op)
@@ -59,8 +59,14 @@ class MyCnnModel:
     def defined_loss_accuracy(self):
         self.loss = tf.losses.sparse_softmax_cross_entropy(labels=self.labels, logits=self.logits)
         # Compute evaluation metrics.
-        self.accuracy = tf.metrics.accuracy(labels=self.labels, redictions=tf.argmax(self.logits, axis=1))
+        self.accuracy = tf.metrics.accuracy(labels=self.labels, predictions=tf.argmax(self.logits, axis=1))
         self.metrics = {'accuracy': self.accuracy}
+        self.LEARNING_RATE = 1e-4
+
+        tf.identity(self.LEARNING_RATE, 'learning_rate')
+        tf.identity(self.loss, 'cross_entropy')
+        tf.identity(self.accuracy[1], name='train_accuracy')
+
         tf.summary.scalar('accuracy', self.accuracy[1])
 
 def  my_model(features, labels, mode, params):
