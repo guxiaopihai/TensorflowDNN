@@ -8,7 +8,7 @@ class CnnTrains:
 
 
     def train(self):
-        self.model.train(input_fn=lambda: self.data.train_input_fn())
+        self.model.train(input_fn=lambda: self.data.train_input_fn(), steps=self.train_steps)
 
     def eval(self):
         eval_result = self.model.evaluate(input_fn=lambda: self.data.eval_input_fn())
